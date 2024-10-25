@@ -8,7 +8,7 @@
 
 // ### ### ###
 // ### ### ###
-// changes 2024.09.26
+// changes 2024.10.25
 
 #ifdef ESP32S3
 #define USE_LD2410 // radar
@@ -18,12 +18,6 @@
 #undef USE_ENHANCED_GUI_WIFI_SCAN // do not work here
 #undef USE_4K_RSA
 #define USE_4K_RSA
-#endif
-
-#ifdef ESP32C6
-#undef USE_AHT1x
-#define USE_AHT2x
-#undef USE_VEML6070 // UV sensor with conflicting I2C address
 #endif
 
 #ifdef ESP8266
@@ -187,15 +181,19 @@
 //
 #elif HAN_S3_ETH
 #undef OTA_URL
-#define OTA_URL "https://u.easyhan.pt/v2/32/tasmota32s3eth.bin"
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32s3eth.bin"
 //
 #elif ESP32S3
 #undef OTA_URL
-#define OTA_URL "https://u.easyhan.pt/v2/32/tasmota32s3.bin"
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32s3.bin"
 //
-#elif ESP32C6
+#elif HAN_C6_HW50
 #undef OTA_URL
-#define OTA_URL "https://u.easyhan.pt/v2/32/tasmota32c6.bin"
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32c6hw50.bin"
+//
+#elif HAN_C6_HW51
+#undef OTA_URL
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32c6hw51.bin"
 //
 #elif ESP32
 #undef OTA_URL
