@@ -11,6 +11,14 @@
 #undef USE_TIMERS_WEB
 #undef USE_AUTOCONF
 
+#ifdef ESP32C6
+#undef USE_SHT
+#undef USE_VEML6070 // UV sensor with conflicting I2C address
+#undef USE_AHT1x
+#undef USE_AHT2x
+#define USE_AHT2x
+#endif
+
 // ### ### ###
 
 #endif // _HAN_ESP32_H_
