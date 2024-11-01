@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.26599"
+#define HAN_VERSION_T "7.270"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -32,7 +32,7 @@ uint8_t hanERR = 0;
 bool hanWork = false;
 bool hDiscovery = true;
 uint32_t hanDelay = 0;
-uint16_t hanDelayWait = 900;     // 1000:
+uint16_t hanDelayWait = 1000;    // 1000:
                                  // Required by e-redes.
 uint32_t hanDelayError = 35000;  // Janz GPRS
                                  // need 35000ms.
@@ -523,8 +523,8 @@ void HanInit() {
     hWtdT = millis();
     //
 
-    sprintf(hErrTime, "%s", "NoError");
-    sprintf(hErrCode, "%s", "NoError");
+    sprintf(hErrTime, "%s", "NoErr");
+    sprintf(hErrCode, "%s", "NoErr");
 
     // Init is successful
     hDrvInit = true;
@@ -653,31 +653,36 @@ void HanDoWork(void) {
     uint16_t hanDTT = 0;
 
     testEB = node.readInputRegisters(0x006E, 1);
-    if (testEB == node.ku8MBSuccess) {
+    if (testEB == 0x00) {
       //
       hanBlink();
       hanDTT = node.getResponseBuffer(0);
       if (hanDTT > 0) {
         hanEB = 3;
         subType = 3;
+        hanIndex++;
         AddLog(LOG_LEVEL_INFO,
                PSTR("HAN: *** EB3 *** %d / %d ***"),
                testEB, hanDTT);
       } else {
         hanEB = 1;
         subType = 3;
+        hanIndex++;
         AddLog(LOG_LEVEL_INFO,
                PSTR("HAN: *** EB1 *** %d / %d ***"),
                testEB, hanDTT);
       }
       //
-    } else {
+    } else if (testEB == 0x02) {
       hanEB = 1;
       subType = 1;
+      hanIndex++;
       AddLog(LOG_LEVEL_INFO,
              PSTR("HAN: *** EB1 *** %d ***"), testEB);
+    } else {
+      AddLog(LOG_LEVEL_INFO,
+             PSTR("HAN: *** Error *** %d ***"), testEB);
     }
-    hanIndex++;
     hanRead = millis();
     hanWork = false;
   }
