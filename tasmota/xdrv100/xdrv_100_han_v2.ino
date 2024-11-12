@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.270"
+#define HAN_VERSION_T "7.272"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -544,7 +544,8 @@ void HanDoWork(void) {
     hanIndex = 0;
   }
 
-  if ((hDiscovery) && (_millis > 50000)) {
+  if ((hDiscovery) && (_millis > 50000) &&
+      (hanEB != 99)) {
     HanDiscovery();
   }
 
@@ -682,6 +683,8 @@ void HanDoWork(void) {
     } else {
       AddLog(LOG_LEVEL_INFO,
              PSTR("HAN: *** Error *** %d ***"), testEB);
+      setDelayError(testEB);
+      hanIndex = 0;
     }
     hanRead = millis();
     hanWork = false;
