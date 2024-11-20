@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.272"
+#define HAN_VERSION_T "7.274"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -241,6 +241,7 @@ void netSaldo() {
     nsIkw = hanTEI;
     nsEkw = hanTEE;
     nsMo = hanMM;
+    hanIndex = 2;  // refresh onetime requests
   }
 
   nsQs = hanTEI - hanTEE - nsIkw + nsEkw;
@@ -674,7 +675,7 @@ void HanDoWork(void) {
                testEB, hanDTT);
       }
       //
-    } else if (testEB == 0x02) {
+    } else if ((testEB == 0x02) || (testEB == 0x04)) {
       hanEB = 1;
       subType = 1;
       hanIndex++;
@@ -685,6 +686,7 @@ void HanDoWork(void) {
              PSTR("HAN: *** Error *** %d ***"), testEB);
       setDelayError(testEB);
       hanIndex = 0;
+      hanERR++;
     }
     hanRead = millis();
     hanWork = false;
