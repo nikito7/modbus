@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.274"
+#define HAN_VERSION_T "7.275991"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -236,15 +236,17 @@ void netSaldo() {
     nsEkw = hanTEE;
   }
 
-  if ((hanMM % 15 == 0) & (hanMM != nsMo) &
-      (hanTEI != 0)) {
+  if ((hanMM % 15 == 0) && (hanMM != nsMo) &&
+      (hanTEI > 0)) {
     nsIkw = hanTEI;
     nsEkw = hanTEE;
     nsMo = hanMM;
     hanIndex = 2;  // refresh onetime requests
   }
 
-  nsQs = hanTEI - hanTEE - nsIkw + nsEkw;
+  if ((hanTEI > 0) && (nsIkw > 0)) {
+    nsQs = hanTEI - hanTEE - nsIkw + nsEkw;
+  }
 }
 
 void freeDS() {
@@ -1549,11 +1551,66 @@ const char HanCommands[] PROGMEM =
     "HanDelayError|"
     "HanTimeout|"
     "HanRestart|"
+    "HanGet|"
     "HanProfile";
 
 void (*const HanCommand[])(void) PROGMEM = {
     &CmdHanDelay,   &CmdHanDelayWait, &CmdHanDelayError,
-    &CmdHanTimeout, &CmdHanRestart,   &CmdHanProfile};
+    &CmdHanTimeout, &CmdHanRestart,   &CmdHanGet,
+    &CmdHanProfile};
+
+//
+
+void CmdHanGet(void) {
+  hanWork = false;
+  hanDelay = 15000;
+
+  uint8_t hRes;
+  uint16_t getLP = 0;
+  char resX[50];
+
+  if ((XdrvMailbox.payload >= 1) &&
+      (XdrvMailbox.payload <= 255)) {
+    //
+
+    getLP = XdrvMailbox.payload;
+
+    node.clearTransmitBuffer();
+    delay(100);
+    node.clearResponseBuffer();
+    delay(100);
+
+    node.setTimeout(1500);
+
+    uint16_t reg16 = 0;
+    uint32_t reg32 = 0;
+
+    hRes = node.readInputRegisters(getLP, 1);
+    if (hRes == node.ku8MBSuccess) {
+      hWtdT = millis();  // feed han wtd
+      hanBlink();
+      //
+      if (true) {
+        reg16 = node.getResponseBuffer(0);
+        sprintf(resX, "%04X,%d", getLP, reg16);
+      }
+      //
+
+      // end success
+    } else {
+      sprintf(resX, "%04X,Error,Code,%d", getLP, hRes);
+    }
+    // *****
+  } else {
+    sprintf(resX, "%04X,Error", getLP);
+  }
+
+  hanRead = millis();
+  hanWork = false;
+  //
+  sprintf(hStatus, "Cmd");
+  ResponseCmndChar(resX);
+}
 
 //
 
