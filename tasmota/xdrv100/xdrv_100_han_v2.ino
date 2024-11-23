@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.275991"
+#define HAN_VERSION_T "7.275"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -1567,13 +1567,22 @@ void CmdHanGet(void) {
 
   uint8_t hRes;
   uint16_t getLP = 0;
+  uint16_t sizeLP = 0;
+
   char resX[50];
 
-  if ((XdrvMailbox.payload >= 1) &&
-      (XdrvMailbox.payload <= 255)) {
-    //
+  // char sub_string[XdrvMailbox.data_len + 1];
 
-    getLP = XdrvMailbox.payload;
+  // sizeLP = atoi(subStr(sub_string,
+  // XdrvMailbox.data,",", 1));
+
+  // getLP = atoi(subStr(sub_string, XdrvMailbox.data,
+  // ",", 2));
+
+  getLP = XdrvMailbox.payload;
+
+  if ((getLP >= 1) && (getLP <= 255)) {
+    //
 
     node.clearTransmitBuffer();
     delay(100);
@@ -1590,19 +1599,26 @@ void CmdHanGet(void) {
       hWtdT = millis();  // feed han wtd
       hanBlink();
       //
-      if (true) {
+      sizeLP = node.available() + 1;
+
+      if (sizeLP == 1) {
         reg16 = node.getResponseBuffer(0);
-        sprintf(resX, "%04X,%d", getLP, reg16);
+        sprintf(resX, "0x%04X,%d", getLP, reg16);
+      } else if (sizeLP == 2) {
+        reg32 = (node.getResponseBuffer(1) |
+                 node.getResponseBuffer(0) << 16);
+        sprintf(resX, "0x%04X,%d", getLP, reg32);
+      } else {
+        sprintf(resX, "0x%04X,ToDo,%d", getLP, sizeLP);
       }
-      //
 
       // end success
     } else {
-      sprintf(resX, "%04X,Error,Code,%d", getLP, hRes);
+      sprintf(resX, "0x%04X,Error,Code,%d", getLP, hRes);
     }
     // *****
   } else {
-    sprintf(resX, "%04X,Error", getLP);
+    sprintf(resX, "0x%04X,Error", getLP);
   }
 
   hanRead = millis();
