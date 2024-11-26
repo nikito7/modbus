@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.275"
+#define HAN_VERSION_T "7.277"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -1602,23 +1602,57 @@ void CmdHanGet(void) {
       sizeLP = node.available() + 1;
 
       if (sizeLP == 1) {
+        // 16bits
         reg16 = node.getResponseBuffer(0);
-        sprintf(resX, "0x%04X,%d", getLP, reg16);
+        sprintf(resX, "%03d-0x%02X,%d", getLP, getLP,
+                reg16);
+
       } else if (sizeLP == 2) {
+        // 32bits
         reg32 = (node.getResponseBuffer(1) |
                  node.getResponseBuffer(0) << 16);
-        sprintf(resX, "0x%04X,%d", getLP, reg32);
+        sprintf(resX, "%03d-0x%02X,%d", getLP, getLP,
+                reg32);
+
+      } else if (sizeLP == 6) {
+        // 12 bytes
+        uint16_t _YY = node.getResponseBuffer(0);
+        uint8_t _MT = node.getResponseBuffer(1) >> 8;
+        uint8_t _DD = node.getResponseBuffer(1) & 0xFF;
+
+        uint8_t _HH = node.getResponseBuffer(2) & 0xFF;
+        uint8_t _MM = node.getResponseBuffer(3) >> 8;
+
+        uint8_t _tmpGMT =
+            node.getResponseBuffer(5) & 0xFF;
+
+        char _gmt[6];
+
+        if (_tmpGMT == 0x80) {
+          sprintf(_gmt, "01");
+        } else {
+          sprintf(_gmt, "00");
+        }
+
+        sprintf(resX,
+                "%03d-0x%02X,%04d-%02d-%02dT%02d:%02dZ%s",
+                getLP, getLP, _YY, _MT, _DD, _HH, _MM,
+                _gmt);
+        //
       } else {
-        sprintf(resX, "0x%04X,ToDo,%d", getLP, sizeLP);
+        //
+        sprintf(resX, "%03d-0x%02X,ToDo,%d", getLP, getLP,
+                sizeLP);
       }
 
       // end success
     } else {
-      sprintf(resX, "0x%04X,Error,Code,%d", getLP, hRes);
+      sprintf(resX, "%03d-0x%02X,Error,Code,%d", getLP,
+              getLP, hRes);
     }
     // *****
   } else {
-    sprintf(resX, "0x%04X,Error", getLP);
+    sprintf(resX, "%03d-0x%02X,Error", getLP, getLP);
   }
 
   hanRead = millis();
