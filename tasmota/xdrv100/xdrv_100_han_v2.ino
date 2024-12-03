@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.277"
+#define HAN_VERSION_T "7.278"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -1563,7 +1563,7 @@ void (*const HanCommand[])(void) PROGMEM = {
 
 void CmdHanGet(void) {
   hanWork = false;
-  hanDelay = 15000;
+  hanDelay = 5000;
 
   uint8_t hRes;
   uint16_t getLP = 0;
@@ -1601,19 +1601,42 @@ void CmdHanGet(void) {
       //
       sizeLP = node.available() + 1;
 
-      if (sizeLP == 1) {
+      if ((getLP == 7) || (getLP == 11) ||
+          (getLP == 19) || (getLP == 132)) {
+        // 8bits
+        reg16 = node.getResponseBuffer(0) >> 8;
+        sprintf(resX, "%03d-0x%02X,%d", getLP, getLP,
+                reg16);
+        //
+      } else if (sizeLP == 1) {
         // 16bits
         reg16 = node.getResponseBuffer(0);
         sprintf(resX, "%03d-0x%02X,%d", getLP, getLP,
                 reg16);
-
+        //
       } else if (sizeLP == 2) {
         // 32bits
         reg32 = (node.getResponseBuffer(1) |
                  node.getResponseBuffer(0) << 16);
         sprintf(resX, "%03d-0x%02X,%d", getLP, getLP,
                 reg32);
+        //
+      } else if ((sizeLP == 3) && (getLP != 3)) {
+        // 6 bytes string
 
+        char _str[12];
+
+        sprintf(_str, "%c%c%c%c%c%c",
+                node.getResponseBuffer(0) >> 8,
+                node.getResponseBuffer(0) & 0xFF,
+                node.getResponseBuffer(1) >> 8,
+                node.getResponseBuffer(1) & 0xFF,
+                node.getResponseBuffer(2) >> 8,
+                node.getResponseBuffer(2) & 0xFF);
+
+        sprintf(resX, "%03d-0x%02X,%s", getLP, getLP,
+                _str);
+        //
       } else if (sizeLP == 6) {
         // 12 bytes
         uint16_t _YY = node.getResponseBuffer(0);
@@ -1647,8 +1670,8 @@ void CmdHanGet(void) {
 
       // end success
     } else {
-      sprintf(resX, "%03d-0x%02X,Error,Code,%d", getLP,
-              getLP, hRes);
+      sprintf(resX, "%03d-0x%02X,Error,Code,0x%02X",
+              getLP, getLP, hRes);
     }
     // *****
   } else {
