@@ -11,6 +11,10 @@
 #undef USE_TIMERS_WEB
 #undef USE_AUTOCONF
 
+#if defined(USE_HAN_V2) && defined(ESP32C6)
+#undef USE_TASMOTA_DISCOVERY
+#endif
+
 #ifdef ESP32C6
 #undef USE_SHT
 #undef USE_VEML6070 // UV sensor with conflicting I2C address
