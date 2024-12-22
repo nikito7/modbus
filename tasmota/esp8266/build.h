@@ -189,6 +189,6 @@
 
 // Avoid users mistakes
 
-#define OTA_URL "http://u.easyhan.pt/han/tasmota-4M.bin.gz"
+#define OTA_URL "http://u.easyhan.pt/v2/tasmota-4M-v1.bin.gz"
 
 // EOF
