@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.2799999"
+#define HAN_VERSION_T "7.279991"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -32,7 +32,7 @@ uint8_t hanERR = 0;
 bool hanWork = false;
 bool hDiscovery = true;
 uint32_t hanDelay = 0;
-uint16_t hanDelayWait = 900;    // 1000:
+uint16_t hanDelayWait = 900;     // 1000:
                                  // Required by e-redes.
 uint32_t hanDelayError = 35000;  // Janz GPRS
                                  // need 35000ms.
@@ -118,6 +118,7 @@ uint32_t hLPX[2];
 
 // Misc
 
+uint8_t hICP = 9;
 float hCT1 = 0;
 float hCT4 = 0;
 uint8_t hTariff = 0;
@@ -129,9 +130,6 @@ char hStatus[12];
 uint32_t hPerf[2] = {0, 0};
 uint32_t hMnfC = 0;
 uint16_t hMnfY = 0;
-char hFw1[12];
-char hFw2[12];
-char hFw3[12];
 
 uint8_t nsMo = 99;
 float nsIkw = 0;
@@ -746,46 +744,11 @@ void HanDoWork(void) {
   }
 
   // # # # # # # # # # #
-  // EMI Info
+  // none
   // # # # # # # # # # #
 
   if (hanWork & (hanIndex == 4)) {
-    hRes = node.readInputRegisters(0x0003, 4);
-    if (hRes == node.ku8MBSuccess) {
-      hMnfC = node.getResponseBuffer(1) |
-              node.getResponseBuffer(0) << 16;
-      hMnfY = node.getResponseBuffer(2);
-
-      sprintf(hFw1, "%c%c%c%c%c",
-              node.getResponseBuffer(3) >> 8,
-              node.getResponseBuffer(3) & 0xFF,
-              node.getResponseBuffer(4) >> 8,
-              node.getResponseBuffer(4) & 0xFF,
-              node.getResponseBuffer(5) >> 8);
-
-      sprintf(hFw2, "%c%c%c%c%c",
-              node.getResponseBuffer(5) & 0xFF,
-              node.getResponseBuffer(6) >> 8,
-              node.getResponseBuffer(6) & 0xFF,
-              node.getResponseBuffer(7) >> 8,
-              node.getResponseBuffer(7) & 0xFF);
-
-      sprintf(hFw3, "%c%c%c%c%c",
-              node.getResponseBuffer(8) >> 8,
-              node.getResponseBuffer(8) & 0xFF,
-              node.getResponseBuffer(9) >> 8,
-              node.getResponseBuffer(9) & 0xFF,
-              node.getResponseBuffer(10) >> 8);
-
-      hanBlink();
-      hanDelay = hanDelayWait;
-      hanIndex++;
-    } else {
-      hanERR++;
-      setDelayError(hRes);
-    }
-    hanRead = millis();
-    hanWork = false;
+    hanIndex++;
   }
 
   // # # # # # # # # # #
@@ -1128,10 +1091,29 @@ void HanDoWork(void) {
   }
 
   // # # # # # # # # # #
+  // ICP todo
+  // # # # # # # # # # #
+
+  if (hanWork & (hanIndex == 15)) {
+    hRes = node.readInputRegisters(0x000B, 1);
+    if (hRes == node.ku8MBSuccess) {
+      hTariff = node.getResponseBuffer(0) >> 8;
+      hanBlink();
+      hanDelay = hanDelayWait;
+      hanIndex++;
+    } else {
+      hanERR++;
+      setDelayError(hRes);
+    }
+    hanRead = millis();
+    hanWork = false;
+  }
+
+  // # # # # # # # # # #
   // EASYHAN MODBUS EOF
   // # # # # # # # # # #
 
-  if (hanIndex > 14) {
+  if (hanIndex > 15) {
     hanIndex = 5;  // skip setup and one time requests.
   }
 
@@ -1278,6 +1260,28 @@ void HanJson(bool json) {
 
     WSContentSend_PD("{s}<br>{m} {e}");
 
+    WSContentSend_PD("{s}Clock {m} %s{e}", hanClock);
+
+    char _icp[12];
+
+    switch (hICP) {
+      case 0:
+        sprintf(_icp, "%s", "Aberto");
+        break;
+      case 1:
+        sprintf(_icp, "%s", "Fechado");
+        break;
+      case 2:
+        sprintf(_icp, "%s", "Rearmar");
+        break;
+      default:
+        sprintf(_icp, "%s", "Erro");
+    }
+
+    WSContentSend_PD("{s}ICP %s {m} %d {e}", _icp, hICP);
+
+    WSContentSend_PD("{s}<br>{m} {e}");
+
     uint32_t tmpWait =
         ((hanRead + hanDelay) - millis()) / 1000;
 
@@ -1314,10 +1318,6 @@ void HanJson(bool json) {
                      hanDelayWait);
     WSContentSend_PD("{s}MB Delay Error {m} %d ms{e}",
                      hanDelayError);
-    WSContentSend_PD("{s}<br>{m} {e}");
-
-    WSContentSend_PD("{s}Clock {m} %s{e}", hanClock);
-
     WSContentSend_PD("{s}<br>{m} {e}");
 
     WSContentSend_PD("{s}Voltage L1 {m} %1_f V{e}",
@@ -1527,13 +1527,6 @@ void HanJson(bool json) {
                      hMnfY);
 
     WSContentSend_PD("{s}EMI %s {m} %d{e}", _emi, hMnfC);
-
-    WSContentSend_PD("{s}<br>{m} {e}");
-
-    WSContentSend_PD("{s}EMI Firmware: {m} {e}");
-    WSContentSend_PD("{s}1. Core {m} %s{e}", hFw1);
-    WSContentSend_PD("{s}2. App {m} %s{e}", hFw2);
-    WSContentSend_PD("{s}3. Com {m} %s{e}", hFw3);
 
     WSContentSend_PD("{s}<br>{m} {e}");
 
