@@ -8,7 +8,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.278"
+#define HAN_VERSION_T "7.2799999"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -32,7 +32,7 @@ uint8_t hanERR = 0;
 bool hanWork = false;
 bool hDiscovery = true;
 uint32_t hanDelay = 0;
-uint16_t hanDelayWait = 1000;    // 1000:
+uint16_t hanDelayWait = 900;    // 1000:
                                  // Required by e-redes.
 uint32_t hanDelayError = 35000;  // Janz GPRS
                                  // need 35000ms.
