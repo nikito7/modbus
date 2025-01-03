@@ -8,7 +8,7 @@
 
 // ### ### ###
 // ### ### ###
-// changes 2024.10.30
+// changes 2025.01.03
 
 #ifdef ESP32S3
 #define USE_LD2410 // radar
@@ -188,7 +188,7 @@
 //
 #elif ESP32S3
 #undef OTA_URL
-#define OTA_URL "https://u.easyhan.pt/v2/32/han32s3.bin"
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32s3base.bin"
 //
 #elif HAN_C6_HW50
 #undef OTA_URL
