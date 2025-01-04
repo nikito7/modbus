@@ -17,6 +17,7 @@
 
 #if defined(HAN_C6_HW50)
 #define USE_WS2812_FORCE_NEOPIXELBUS
+#undef USE_WS2812
 #endif
 
 #ifdef ESP32C6
