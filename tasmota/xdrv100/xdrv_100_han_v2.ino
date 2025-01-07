@@ -1,5 +1,6 @@
 // Tasmota HAN Driver for EMI (edpbox)
 // easyhan.pt
+// github.com/nikito7
 
 #ifdef USE_HAN_V2
 #ifndef HAN_V1
@@ -8,7 +9,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.279991"
+#define HAN_VERSION_T "7.2829992"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -24,21 +25,22 @@ bool hDrvInit = false;
 
 // HAN
 
-uint8_t hanCFG = 99;   // def: serial stop bits
-uint8_t hanEB = 99;    // def: mono or tri
-uint8_t subType = 99;  // def: if meter reply
+uint8_t hanCFG = 99;   // serial stop bits.
+uint8_t hanEB = 99;    // mono or tri.
+uint8_t subType = 99;  // if meter reply
                        // to L1 L2 L3 in mono.
-uint8_t hanERR = 0;
+uint16_t hanERR = 0;
 bool hanWork = false;
 bool hDiscovery = true;
 uint32_t hanDelay = 0;
-uint16_t hanDelayWait = 900;     // 1000:
-                                 // Required by e-redes.
-uint32_t hanDelayError = 35000;  // Janz GPRS
-                                 // need 35000ms.
-uint16_t hTimeout = 1500;        // 1500: Some  meters
-                                 // are slow to reply.
-uint8_t hanIndex = 0;            // 0 = setup
+uint16_t hanDelayWait = 900;  // 1000:
+                              // Required by e-redes.
+bool hJanz = true;
+uint32_t hanDelayError = 5000;  // Janz GPRS
+                                // need 35000ms.
+uint16_t hTimeout = 1500;       // 1500: Some  meters
+                                // are slow to reply.
+uint8_t hanIndex = 0;           // 0 = setup
 uint32_t hanRead = 0;
 uint8_t hanCode = 0;
 uint8_t hRestart = 0;
@@ -239,7 +241,7 @@ void netSaldo() {
     nsIkw = hanTEI;
     nsEkw = hanTEE;
     nsMo = hanMM;
-    hanIndex = 2;  // refresh onetime requests
+    hanIndex = 3;  // refresh onetime requests
   }
 
   if ((hanTEI > 0) && (nsIkw > 0)) {
@@ -693,10 +695,32 @@ void HanDoWork(void) {
   }
 
   // # # # # # # # # # #
-  // Contract
+  // EMI Info
   // # # # # # # # # # #
 
   if (hanWork & (hanIndex == 2)) {
+    hRes = node.readInputRegisters(0x0003, 1);
+    if (hRes == node.ku8MBSuccess) {
+      hMnfC = node.getResponseBuffer(1) |
+              node.getResponseBuffer(0) << 16;
+      hMnfY = node.getResponseBuffer(2);
+
+      hanBlink();
+      hanDelay = hanDelayWait;
+      hanIndex++;
+    } else {
+      hanERR++;
+      setDelayError(hRes);
+    }
+    hanRead = millis();
+    hanWork = false;
+  }
+
+  // # # # # # # # # # #
+  // Contract
+  // # # # # # # # # # #
+
+  if (hanWork & (hanIndex == 3)) {
     hRes = node.readInputRegisters(0x000C, 4);
     if (hRes == node.ku8MBSuccess) {
       hCT1 = (node.getResponseBuffer(1) |
@@ -720,7 +744,7 @@ void HanDoWork(void) {
   // LP ID
   // # # # # # # # # # #
 
-  if (hanWork & (hanIndex == 3)) {
+  if (hanWork & (hanIndex == 4)) {
     hRes = node.readInputRegisters(0x0080, 1);
     if (hRes == node.ku8MBSuccess) {
       hLPid[1] = node.getResponseBuffer(0) >> 8;
@@ -741,14 +765,6 @@ void HanDoWork(void) {
     }
     hanRead = millis();
     hanWork = false;
-  }
-
-  // # # # # # # # # # #
-  // none
-  // # # # # # # # # # #
-
-  if (hanWork & (hanIndex == 4)) {
-    hanIndex++;
   }
 
   // # # # # # # # # # #
@@ -1091,13 +1107,13 @@ void HanDoWork(void) {
   }
 
   // # # # # # # # # # #
-  // ICP todo
+  // ICP
   // # # # # # # # # # #
 
   if (hanWork & (hanIndex == 15)) {
-    hRes = node.readInputRegisters(0x000B, 1);
+    hRes = node.readInputRegisters(0x0084, 1);
     if (hRes == node.ku8MBSuccess) {
-      hTariff = node.getResponseBuffer(0) >> 8;
+      hICP = node.getResponseBuffer(0) >> 8;
       hanBlink();
       hanDelay = hanDelayWait;
       hanIndex++;
@@ -1117,8 +1133,8 @@ void HanDoWork(void) {
     hanIndex = 5;  // skip setup and one time requests.
   }
 
-  if (hanERR > 90) {
-    hanERR = 30;
+  if (hanERR > 50000) {
+    hanERR = 10000;
   }
 
   // end loop
@@ -1235,6 +1251,7 @@ void HanJson(bool json) {
     //
 
     ResponseAppend_P(",\"CT1\":%2_f", &hCT1);
+    ResponseAppend_P(",\"ICP\":%d", hICP);
     ResponseAppend_P(",\"Tariff\":%d", hTariff);
     ResponseAppend_P(",\"FW\":" HAN_VERSION);
 
@@ -1255,30 +1272,41 @@ void HanJson(bool json) {
 
     if (bitRead(Settings->rule_enabled, 0) == 0) {
       WSContentSend_PD("{s}<br>{m} {e}");
-      WSContentSend_PD("{s}Script disabled !! {m} {e}");
+      WSContentSend_PD("{s}Script disabled {m} !! {e}");
     }
+
+#if defined(HAN_C6_HW50)
+    WSContentSend_PD("{s}<br>{m} {e}");
+    WSContentSend_PD("{s}Disable I2C {m} !! {e}");
+    WSContentSend_PD(
+        "{s}Configuration, Template {m} !! {e}");
+    WSContentSend_PD("{s}And upgrade to {m} !! {e}");
+    WSContentSend_PD("{s}han32c6hw51.bin{m} !! {e}");
+    WSContentSend_PD("{s}<br>{m} {e}");
+#endif
 
     WSContentSend_PD("{s}<br>{m} {e}");
 
-    WSContentSend_PD("{s}Clock {m} %s{e}", hanClock);
+    WSContentSend_PD("{s}EMI Clock {m} %s{e}", hanClock);
 
     char _icp[12];
 
     switch (hICP) {
       case 0:
-        sprintf(_icp, "%s", "Aberto");
+        sprintf(_icp, "%s", "Open");
         break;
       case 1:
-        sprintf(_icp, "%s", "Fechado");
+        sprintf(_icp, "%s", "Closed");
         break;
       case 2:
-        sprintf(_icp, "%s", "Rearmar");
+        sprintf(_icp, "%s", "Ready");
         break;
       default:
-        sprintf(_icp, "%s", "Erro");
+        sprintf(_icp, "%s", "???");
     }
 
-    WSContentSend_PD("{s}ICP %s {m} %d {e}", _icp, hICP);
+    WSContentSend_PD("{s}EMI ICP %s {m} %d {e}", _icp,
+                     hICP);
 
     WSContentSend_PD("{s}<br>{m} {e}");
 
@@ -1488,6 +1516,12 @@ void HanJson(bool json) {
     switch (hMnfC) {
       case 6623491:
         sprintf(_emi, "%s", "T Janz GPRS");
+        //
+        if (hJanz) {
+          hanDelayError = 35000;
+          hJanz = false;
+        }
+        //
         break;
       case 6750210:
         sprintf(_emi, "%s", "M Landis+Gyr S3");
@@ -1507,11 +1541,14 @@ void HanJson(bool json) {
       case 11014146:
         sprintf(_emi, "%s", "T Sagem CX2000-9");
         break;
+      case 11014147:
+        sprintf(_emi, "%s", "T Sagem ???");
+        break;
       case 16973825:
         sprintf(_emi, "%s", "? Ziv ???");
         break;
       case 16977920:
-        sprintf(_emi, "%s", "T Ziv 5CTD-E2F");
+        sprintf(_emi, "%s", "T Ziv 5CTD E2F");
         break;
       case 18481154:
         sprintf(_emi, "%s", "M Kaifa MA109P");
@@ -1868,9 +1905,11 @@ bool Xdrv100(uint32_t function) {
         HanDoWork();
         break;
       case FUNC_JSON_APPEND:
-        if (millis() > 31000) {
+        //
+        if ((millis() > 31000) && (hanEB != 99)) {
           HanJson(true);
         }
+        //
         break;
       case FUNC_COMMAND:
         result = DecodeCommand(HanCommands, HanCommand);
