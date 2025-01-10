@@ -9,7 +9,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.2829992"
+#define HAN_VERSION_T "7.283995"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -124,6 +124,7 @@ uint8_t hICP = 9;
 float hCT1 = 0;
 float hCT4 = 0;
 uint8_t hTariff = 0;
+char hCiclo[12];
 
 char hErrTime[12];
 char hErrCode[12];
@@ -1088,13 +1089,21 @@ void HanDoWork(void) {
   }
 
   // # # # # # # # # # #
-  // Tariff
+  // Ciclo / Tariff
   // # # # # # # # # # #
 
   if (hanWork & (hanIndex == 14)) {
-    hRes = node.readInputRegisters(0x000B, 1);
+    hRes = node.readInputRegisters(0x000A, 2);
     if (hRes == node.ku8MBSuccess) {
-      hTariff = node.getResponseBuffer(0) >> 8;
+      //
+      sprintf(hCiclo, "%c%c%c%c",
+              node.getResponseBuffer(0) >> 8,
+              node.getResponseBuffer(0) & 0xFF,
+              node.getResponseBuffer(1) >> 8,
+              node.getResponseBuffer(1) & 0xFF);
+      //
+      hTariff = node.getResponseBuffer(3) >> 8;
+      //
       hanBlink();
       hanDelay = hanDelayWait;
       hanIndex++;
@@ -1327,6 +1336,13 @@ void HanJson(bool json) {
                        hErrTime);
       WSContentSend_PD("{s}MB Error Code {m} %s {e}",
                        hErrCode);
+      //
+      uint32_t _uph = millis() / 60 / 60;
+      float _ErrRate = hanERR / _uph;
+
+      WSContentSend_PD("{s}MB Error Rate {m} %1_f {e}",
+                       &_ErrRate);
+      //
       WSContentSend_PD("{s}MB Error Count {m} %d {e}",
                        hanERR);
       WSContentSend_PD("{s}MB Restart {m} %d {e}",
@@ -1507,7 +1523,8 @@ void HanJson(bool json) {
         sprintf(tarifa, "%d", hTariff);
     }
 
-    WSContentSend_PD("{s}Tariff {m} %s{e}", tarifa);
+    WSContentSend_PD("{s}Tarifa {m} %s{e}", tarifa);
+    WSContentSend_PD("{s}Ciclo {m} %s{e}", hCiclo);
 
     WSContentSend_PD("{s}<br>{m} {e}");
 
@@ -1938,3 +1955,4 @@ bool Xdrv100(uint32_t function) {
 
 #endif  // HAN_V1
 #endif  // USE_HAN_V2
+
