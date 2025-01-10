@@ -8,7 +8,7 @@
 
 // ### ### ###
 // ### ### ###
-// changes 2025.01.07
+// changes 2025.01.10
 
 #ifdef ESP32S3
 #define USE_LD2410 // radar
@@ -142,7 +142,7 @@
 
 #if defined(ESP8266)
 #undef USER_BACKLOG
-#define USER_BACKLOG "WebLog 2; Sleep 75; WifiPower 15; Template {\"NAME\":\"easyhan.pt\",\"GPIO\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1],\"FLAG\":0,\"BASE\":18}; Module 0; SaveData 9; SerialLog 0; WifiConfig 2; Script 1"
+#define USER_BACKLOG "WebLog 2; Sleep 75; WifiPower 15; Template {\"NAME\":\"e5.easyhan.pt\",\"GPIO\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1],\"FLAG\":0,\"BASE\":18}; Module 0; SaveData 9; SerialLog 0; WifiConfig 2; Script 1"
 //
 #elif defined(HAN_C6_HW51) || defined(HAN_C6_HW50)
 #define USER_BACKLOG "WebLog 2; Sleep 75; WifiPower 15; Template {\"NAME\":\"hw5x.c6.easyhan.pt\",\"GPIO\":[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":1}; Module 0; SaveData 9; WifiConfig 2; Script 1"
