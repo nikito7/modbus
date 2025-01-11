@@ -9,7 +9,7 @@
 #define XDRV_100 100
 
 #undef HAN_VERSION_T
-#define HAN_VERSION_T "7.283995"
+#define HAN_VERSION_T "7.284"
 
 #ifdef EASYHAN_TCP
 #undef HAN_VERSION
@@ -1336,15 +1336,17 @@ void HanJson(bool json) {
                        hErrTime);
       WSContentSend_PD("{s}MB Error Code {m} %s {e}",
                        hErrCode);
-      //
-      uint32_t _uph = millis() / 60 / 60;
-      float _ErrRate = hanERR / _uph;
-
-      WSContentSend_PD("{s}MB Error Rate {m} %1_f {e}",
-                       &_ErrRate);
-      //
       WSContentSend_PD("{s}MB Error Count {m} %d {e}",
                        hanERR);
+      //
+      float _uph = millis() / 1000.0 / 60.0 / 60.0;
+      float _ErrRate = hanERR / _uph;
+
+      if (hanERR > _ErrRate) {
+        WSContentSend_PD("{s}MB Error Rate {m} %1_f {e}",
+                         &_ErrRate);
+      }
+      //
       WSContentSend_PD("{s}MB Restart {m} %d {e}",
                        hRestart);
       WSContentSend_PD("{s}MB Watchdog {m} %ds {e}",
@@ -1955,4 +1957,3 @@ bool Xdrv100(uint32_t function) {
 
 #endif  // HAN_V1
 #endif  // USE_HAN_V2
-
