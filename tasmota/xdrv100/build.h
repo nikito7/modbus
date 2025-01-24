@@ -8,7 +8,13 @@
 
 // ### ### ###
 // ### ### ###
-// changes 2025.01.10
+// changes 2025.01.24
+
+#if defined(EASYHAN_LORA)
+#define USE_SPI_LORA
+#define USE_LORA_SX127X
+#endif
+
 
 #ifdef ESP32S3
 #define USE_LD2410 // radar
