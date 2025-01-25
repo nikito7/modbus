@@ -8,7 +8,7 @@
 
 // ### ### ###
 // ### ### ###
-// changes 2025.01.24
+// changes 2025.01.25
 
 #if defined(EASYHAN_LORA)
 #define USE_SPI_LORA
@@ -16,8 +16,9 @@
 #endif
 
 
-#ifdef ESP32S3
+#ifdef ESP32
 #define USE_LD2410 // radar
+#define USE_MPU6050
 #endif
 
 #ifdef ESP32
@@ -199,6 +200,10 @@
 #elif defined(HAN_C6_HW51) || defined(HAN_C6_HW50)
 #undef OTA_URL
 #define OTA_URL "https://u.easyhan.pt/v2/32/han32c6hw51.bin"
+//
+#elif defined(ESP32) && defined(EASYHAN_LORA)
+#undef OTA_URL
+#define OTA_URL "https://u.easyhan.pt/v2/32/han32lora.bin"
 //
 #elif ESP32
 #undef OTA_URL
