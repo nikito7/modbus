@@ -523,7 +523,11 @@ String AddWebCommand(const char* command, const char* arg, const char* dflt) {
 }
 
 static bool WifiIsInManagerMode(){
-  return (HTTP_MANAGER == Web.state || HTTP_MANAGER_RESET_ONLY == Web.state);
+  #ifndef USE_ALWAYS_AP
+  return (HTTP_MANAGER == Web.state || HTTP_MANAGER_RESET_ONLY == Web.state); //ADJUSTMENT DEFAULT
+  #else
+  return false; //ADJUSTMENT
+  #endif
 }
 
 void ShowWebSource(uint32_t source)
@@ -621,10 +625,14 @@ void StartWebserver(int type)
       XdrvXsnsCall(FUNC_WEB_ADD_HANDLER);
 #endif  // Not FIRMWARE_MINIMAL
 
-      if (!Web.initial_config) {
-        Web.initial_config = (!strlen(SettingsText(SET_STASSID1)) && !strlen(SettingsText(SET_STASSID2)));
-        if (Web.initial_config) { AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP "Blank Device - Initial Configuration")); }
+#ifndef USE_ALWAYS_AP
+      if (!Web.initial_config) {  //ADJUSTMENT DEFAULT
+        Web.initial_config = (!strlen(SettingsText(SET_STASSID1)) && !strlen(SettingsText(SET_STASSID2)));    //ADJUSTMENT DEFAULT
+        if (Web.initial_config) { AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_HTTP "Blank Device - Initial Configuration")); }    //ADJUSTMENT DEFAULT
       }
+#else
+      Web.initial_config = true; //ADJUSTMENT to keep the unit from restarting every 3 minutes if wifi credentials are entered
+#endif
     }
     Web.reset_web_log_flag = false;
 
@@ -673,7 +681,12 @@ void WifiManagerBegin(bool reset_only)
   DnsServer->setErrorReplyCode(DNSReplyCode::NoError);
   DnsServer->start(DNS_PORT, "*", WiFi.softAPIP());
 
-  StartWebserver((reset_only ? HTTP_MANAGER_RESET_ONLY : HTTP_MANAGER));
+#ifndef USE_ALWAYS_AP
+  StartWebserver((reset_only ? HTTP_MANAGER_RESET_ONLY : HTTP_MANAGER)); //ADJUSTMENT DEFAULT
+#else
+  Web.state = HTTP_OFF; //ADJUSTMENT
+  StartWebserver((reset_only ? HTTP_MANAGER_RESET_ONLY : HTTP_ADMIN)); //ADJUSTMENT
+#endif
 }
 
 void PollDnsWebserver(void)
@@ -1108,6 +1121,10 @@ void WebRestart(uint32_t type) {
 #endif  // ESP32
     TasmotaGlobal.restart_flag = 2;
   }
+  #ifdef USE_ALWAYS_AP
+  Web.state = HTTP_ADMIN; //ADJUSTMENT
+  WSContentSpaceButton(BUTTON_MAIN); //ADJUSTMENT
+  #endif
   WSContentStop();
 }
 
